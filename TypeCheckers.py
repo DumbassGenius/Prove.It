@@ -24,8 +24,9 @@ def Initiate(val, val_type):
 
 def EnsureIsListOf(val: list, val_type: type):
     if ensure:
-        EnsureIsType(val, list)
+        if not isinstance(val, (list, tuple)):
+            raise TypeError(val, "is not a list, is", type(val))
         for element in val:
-            EnsureIsType(val_type)
+            EnsureIsType(element, val_type)
     return val
 
