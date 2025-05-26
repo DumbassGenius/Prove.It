@@ -1,32 +1,31 @@
 
 from TypeCheckers import *
-from Contexts import *
+from ModManager import ModManager
 
+manager = ModManager()
 
 class Construct:
 # Constructs define symbolic relations. They behave as a user defined class for expressions. Calling a construct returns an expression, with the input expressions as it's subexpressions. 
-# The construction function will define how expressions are created. The mods will add additional functionality to expressions. They will act on expressions and return nothing, or raise an error. 
-    def __init__(self, construction, *mods):
-        self.construction = EnsureIsType(construction, function)
+# Construct can be called with any kwargs, and all the attributes will be assigned to the construct, and passed on the plugins
+    def __init__(self, **kwargs):
+        manager.ConstructInit(self,**kwargs)
 
     # Creates a new expression, applies the construction function to it, and returns it. 
-    def __call__(self, *subExprs):
+    def __call__(self, *subExprs, **kwargs):
         EnsureIsListOf(subExprs, Expr)
-        newexpr = Expr(self)
-        self.construction(newexpr, *subExprs)
-        for mod in self.mods: 
-            mod(newexpr)
-        return newexpr
-        
+        return Expr(self, *subExprs, **kwargs)
+
 # These are instances of symbolic relations, defined via constructs. 
 class Expr:
 
     # Expressions are partially initialized, and then the construction function will finish initiaizing it. 
-    def __init__(self, construct: Construct):
+    def __init__(self, construct: Construct, *subExprs, **kwargs):
         self.construct = EnsureIsType(construct, Construct)
-        self.subExprs = []
-        self.numSubExprs = 0
+        self.subExprs = EnsureIsListOf(subExprs, Expr)
+        self.numSubExprs = len(self.subExprs)
         self.isvar = False
+
+        manager.ExprInit(self, *subExprs, **kwargs)
     
     # First subexprs are all rendered, then plugged into the rendering function of the construct
     def render(self):
@@ -53,26 +52,20 @@ class Expr:
 
 # These are the bass instances of Expressions, used to create other expressions. 
 class Var(Expr):
-    def __init__(self, symbol):
+    def __init__(self, **kwargs):
         self.subExprs = []
         self.numSubExprs = 0
         self.construct = None
-        self.symbol: str = EnsureIsType(symbol, str)
-        self.renderFunct = lambda renderedSubExprs: symbol
         self.isvar = True
 
-    def render(self):
-        return self.symbol
+        manager.onVarInit(self, **kwargs)
     
-    # Variables are equal iff their id is equal, it is NOT dependent on the symbol used. 
+    # Variables are equal iff their id is equal
     def __eq__(self, value):
         return id(self) == id(value)
 
-    def __hash__(self):
-        return id(self)
-
     def __repr__(self):
-        return f"Var({self.symbol}, {id(self)})"
+        return f"Var({id(self)})"
 
 
 
