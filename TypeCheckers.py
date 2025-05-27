@@ -1,5 +1,4 @@
 from types import FunctionType as function
-from inspect import signature
 
 ensure = True
 
